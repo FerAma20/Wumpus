@@ -34,12 +34,14 @@ public final class AStar implements SearchAlgorithm {
     @Override
     public SearchResult search(Cell start, Cell goal, Predicate<Cell> passable, int size) {
         if (start.equals(goal)) {
-            return new SearchResult(List.of(start), 1);
+            return new SearchResult(List.of(start), 1, List.of(start));
         }
 
         Map<Cell, Cell> parent = new HashMap<>();
         Map<Cell, Integer> gScore = new HashMap<>();
         gScore.put(start, 0);
+        List<Cell> explored = new ArrayList<>();   // celdas alcanzadas (para visualizar la búsqueda)
+        explored.add(start);
 
         // PriorityQueue ordenada por f(n) ascendente; desempata por g(n).
         PriorityQueue<Node> open = new PriorityQueue<>(
@@ -51,7 +53,7 @@ public final class AStar implements SearchAlgorithm {
             Node cur = open.poll();
             expanded++;
             if (cur.cell.equals(goal)) {
-                return new SearchResult(reconstruct(parent, start, goal), expanded);
+                return new SearchResult(reconstruct(parent, start, goal), expanded, explored);
             }
             for (Direction d : Direction.values()) {
                 Cell n = d.stepFrom(cur.cell);
@@ -64,10 +66,11 @@ public final class AStar implements SearchAlgorithm {
                     gScore.put(n, tentativeG);
                     int h = n.manhattanTo(goal);
                     open.add(new Node(n, tentativeG, tentativeG + h));
+                    explored.add(n);
                 }
             }
         }
-        return new SearchResult(List.of(), expanded);
+        return new SearchResult(List.of(), expanded, explored);
     }
 
     /** Nodo interno de la frontera; encapsula celda, g y f para no recalcular. */

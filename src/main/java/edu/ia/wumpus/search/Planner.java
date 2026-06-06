@@ -33,7 +33,8 @@ public final class Planner {
     public enum Intent { EXPLORE, RETURN_HOME, TAKE_RISK, STUCK }
 
     /** Resultado completo de un ciclo de planificación. */
-    public record Plan(Intent intent, Cell goal, List<Cell> path, int expanded, String algo) {
+    public record Plan(Intent intent, Cell goal, List<Cell> path, int expanded,
+                       String algo, List<Cell> explored) {
         public boolean hasPath() { return path != null && path.size() >= 2; }
     }
 
@@ -56,14 +57,14 @@ public final class Planner {
         if (hasGold) {
             Cell home = new Cell(0, 0);
             SearchResult r = searchAlgo.search(current, home, kb::isSafe, size);
-            return new Plan(Intent.RETURN_HOME, home, r.path(), r.expanded(), searchAlgo.name());
+            return new Plan(Intent.RETURN_HOME, home, r.path(), r.expanded(), searchAlgo.name(), r.explored());
         }
 
         // 2. Caso "hay segura no visitada" → ir a la más cercana en Manhattan
         Cell target = nearestSafeUnvisited(current, kb);
         if (target != null) {
             SearchResult r = searchAlgo.search(current, target, kb::isSafe, size);
-            return new Plan(Intent.EXPLORE, target, r.path(), r.expanded(), searchAlgo.name());
+            return new Plan(Intent.EXPLORE, target, r.path(), r.expanded(), searchAlgo.name(), r.explored());
         }
 
         // 3. Caso "asumir riesgo": elegir la celda no visitada con menor peligro
@@ -73,11 +74,11 @@ public final class Planner {
             final Cell riskyFinal = risky;
             SearchResult r = searchAlgo.search(current, risky,
                     c -> kb.isSafe(c) || c.equals(riskyFinal), size);
-            return new Plan(Intent.TAKE_RISK, risky, r.path(), r.expanded(), searchAlgo.name());
+            return new Plan(Intent.TAKE_RISK, risky, r.path(), r.expanded(), searchAlgo.name(), r.explored());
         }
 
         // 4. No queda nada por hacer
-        return new Plan(Intent.STUCK, current, List.of(current), 0, searchAlgo.name());
+        return new Plan(Intent.STUCK, current, List.of(current), 0, searchAlgo.name(), List.of());
     }
 
     /** Celda segura no visitada más cercana en Manhattan, o null si no hay. */

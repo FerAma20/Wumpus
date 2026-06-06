@@ -65,6 +65,19 @@ public final class Simulator {
     /** Último plan calculado por el agente — usado por la UI para dibujar la ruta. */
     public edu.ia.wumpus.search.Planner.Plan getLastPlan() { return lastPlan; }
 
+    /**
+     * MODO MANUAL — Asistencia de búsqueda. Calcula (sin mover al agente) la
+     * ruta que el planificador recomienda con el algoritmo activo (BFS o A*):
+     * hacia la celda segura no visitada más cercana, o de regreso a (1,1) si
+     * ya se tiene el oro. Sirve como "pista" para que el jugador vea cómo
+     * razona la búsqueda informada/no informada sobre el grafo de seguras.
+     */
+    public edu.ia.wumpus.search.Planner.Plan suggestPath() {
+        Planner.Plan p = agent.think();
+        this.lastPlan = p;
+        return p;
+    }
+
     /** Ejecuta turnos hasta que el agente termine (gane, muera, se bloquee o se acabe el tiempo). */
     public GameResult runToCompletion() {
         while (result == GameResult.RUNNING) step();

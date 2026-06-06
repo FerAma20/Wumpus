@@ -27,6 +27,7 @@ import edu.ia.wumpus.environment.WorldGenerator;
 import edu.ia.wumpus.search.AStar;
 import edu.ia.wumpus.search.BFS;
 import edu.ia.wumpus.search.SearchAlgorithm;
+import edu.ia.wumpus.search.Planner;
 import edu.ia.wumpus.simulation.GameResult;
 import edu.ia.wumpus.simulation.Simulator;
 
@@ -59,7 +60,7 @@ public final class WumpusFrame extends JFrame {
     private JLabel statPos, statTurn, statScore, statState;
     private JTextArea kbArea, inferArea, logArea;
     private JCheckBox revealBox;
-    private JButton autoBtn, stepBtn, climbBtn;
+    private JButton autoBtn, stepBtn, climbBtn, hintBtn;
     private JLabel feedback;
     private int lastLogLen = 0, lastInferLen = 0;
 
@@ -152,6 +153,10 @@ public final class WumpusFrame extends JFrame {
             }
         });
         bar.add(climbBtn);
+
+        hintBtn = button("Pista ⓘ");
+        hintBtn.addActionListener(e -> showHint());
+        bar.add(hintBtn);
 
         JButton resetBtn = button("Reiniciar");
         resetBtn.addActionListener(e -> resetSim());
@@ -332,6 +337,30 @@ public final class WumpusFrame extends JFrame {
      * movimiento al simulador — que ejecuta percepción, inferencia, puntuación
      * y comprobación de muerte/oro — y refresca la vista con el resultado.
      */
+    /**
+     * Calcula y resalta (sin mover) la ruta recomendada por la búsqueda activa.
+     * Es la integración visible de BFS/A* dentro del modo manual.
+     */
+    private void showHint() {
+        if (sim.getResult() != GameResult.RUNNING) return;
+        Planner.Plan p = sim.suggestPath();
+        if (p != null && p.hasPath()) {
+            board.update(world, agent, p, reveal);   // dibuja la ruta punteada
+            board.setExplored(p.explored());          // sombrea las casillas examinadas
+            String meta = switch (p.intent()) {
+                case RETURN_HOME -> "regreso seguro a (1,1)";
+                case EXPLORE     -> "siguiente casilla segura";
+                case TAKE_RISK   -> "no hay seguras: ruta de menor riesgo";
+                case STUCK       -> "sin ruta";
+            };
+            setFeedback(p.algo() + " examinó " + p.explored().size() + " casilla(s) (expandidas: "
+                    + p.expanded() + ") → " + meta + " " + p.goal().human()
+                    + ".  Cambia de algoritmo y vuelve a pulsar Pista para comparar.", Theme.ACCENT);
+        } else {
+            setFeedback("La búsqueda no encontró una ruta segura desde aquí.", Theme.RED);
+        }
+    }
+
     private void onManualClick(Cell target) {
         Simulator.MoveStatus st = sim.manualMove(target);
         switch (st) {
@@ -365,6 +394,7 @@ public final class WumpusFrame extends JFrame {
         }
         if (stepBtn != null)  stepBtn.setEnabled(!manualMode && running);
         if (autoBtn != null)  autoBtn.setEnabled(!manualMode && running);
+        if (hintBtn != null)  hintBtn.setEnabled(manualMode && running);
         if (climbBtn != null) climbBtn.setEnabled(manualMode && running
                 && agent.hasGold() && agent.getPos().equals(new Cell(0, 0)));
     }

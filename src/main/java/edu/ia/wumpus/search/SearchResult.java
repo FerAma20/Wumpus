@@ -13,6 +13,12 @@ import edu.ia.wumpus.core.Cell;
 
 import java.util.List;
 
-public record SearchResult(List<Cell> path, int expanded) {
+public record SearchResult(List<Cell> path, int expanded, List<Cell> explored) {
+
+    /** Atajo: sin lista de exploración (compatibilidad). */
+    public SearchResult(List<Cell> path, int expanded) {
+        this(path, expanded, List.of());
+    }
+
     public boolean found() { return path != null && !path.isEmpty(); }
 }

@@ -48,6 +48,9 @@ public final class BoardPanel extends JPanel {
     private Cell hovered = null;                // celda bajo el cursor
     private Consumer<Cell> onCellClick;         // callback al pulsar una celda válida
 
+    // --- Visualización de la búsqueda (BFS vs A*) ---
+    private final java.util.List<Cell> explored = new java.util.ArrayList<>(); // casillas examinadas
+
     // --- Geometría calculada en el último paint (para hit-testing del ratón) ---
     private int geoOx, geoOy, geoGap, geoN;
     private double geoCs;
@@ -88,6 +91,18 @@ public final class BoardPanel extends JPanel {
         this.agent = agent;
         this.plan = plan;
         this.reveal = reveal;
+        this.explored.clear();   // un refresco normal borra la visualización de búsqueda
+        repaint();
+    }
+
+    /**
+     * Resalta las casillas que un algoritmo de búsqueda examinó para hallar la
+     * ruta. Es la diferencia VISIBLE entre BFS (mancha amplia) y A* (corredor
+     * estrecho hacia la meta). Llamar DESPUÉS de update().
+     */
+    public void setExplored(java.util.List<Cell> cells) {
+        this.explored.clear();
+        if (cells != null) this.explored.addAll(cells);
         repaint();
     }
 
@@ -156,6 +171,9 @@ public final class BoardPanel extends JPanel {
 
         // Resaltar celdas pulsables y la celda bajo el cursor (modo manual)
         if (interactive) drawClickableHighlights(g, ox, oy, cs, gap, n);
+
+        // Visualización de la búsqueda (casillas examinadas) debajo de la ruta
+        drawExplored(g, ox, oy, cs, gap, n);
 
         // Ruta planificada (línea punteada azul)
         drawPlannedPath(g, ox, oy, cs, gap, n);
@@ -252,6 +270,30 @@ public final class BoardPanel extends JPanel {
                 g.setFont(Theme.mono(Math.max(9, w / 8), Font.BOLD));
                 g.setColor(revealedGold ? Theme.GOLD_TEXT : Theme.RED);
                 g.drawString(icon, px + 5, py + w - 6);
+            }
+        }
+    }
+
+    /**
+     * Sombrea las casillas examinadas por la búsqueda con una numeración del
+     * orden de expansión, para que se vea CUÁNTO exploró cada algoritmo.
+     */
+    private void drawExplored(Graphics2D g, int ox, int oy, double cs, int gap, int n) {
+        if (explored.isEmpty()) return;
+        for (int i = 0; i < explored.size(); i++) {
+            Cell c = explored.get(i);
+            int px = (int) Math.round(ox + c.x() * (cs + gap));
+            int py = (int) Math.round(oy + (n - 1 - c.y()) * (cs + gap));
+            int w = (int) Math.round(cs);
+            g.setColor(new Color(0x2C, 0x4A, 0x6E, 46));   // tinte azul translucido
+            g.fillRoundRect(px, py, w, w, 6, 6);
+            // número de orden de expansión (pequeño, centrado-arriba)
+            if (w > 36) {
+                g.setColor(new Color(0x2C, 0x4A, 0x6E, 200));
+                g.setFont(Theme.mono(Math.max(9, w / 8), Font.BOLD));
+                String s = String.valueOf(i + 1);
+                FontMetrics fm = g.getFontMetrics();
+                g.drawString(s, px + (w - fm.stringWidth(s)) / 2, py + w / 2 - 2);
             }
         }
     }

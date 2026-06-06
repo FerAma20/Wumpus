@@ -29,19 +29,21 @@ public final class BFS implements SearchAlgorithm {
     @Override
     public SearchResult search(Cell start, Cell goal, Predicate<Cell> passable, int size) {
         if (start.equals(goal)) {
-            return new SearchResult(List.of(start), 1);
+            return new SearchResult(List.of(start), 1, List.of(start));
         }
         Map<Cell, Cell> parent = new HashMap<>();
         parent.put(start, null);
         Deque<Cell> queue = new ArrayDeque<>();
         queue.add(start);
+        List<Cell> explored = new ArrayList<>();  // celdas alcanzadas (para visualizar la búsqueda)
+        explored.add(start);
         int expanded = 0;
 
         while (!queue.isEmpty()) {
             Cell cur = queue.poll();
             expanded++;
             if (cur.equals(goal)) {
-                return new SearchResult(reconstruct(parent, goal), expanded);
+                return new SearchResult(reconstruct(parent, goal), expanded, explored);
             }
             for (Direction d : Direction.values()) {
                 Cell n = d.stepFrom(cur);
@@ -51,9 +53,10 @@ public final class BFS implements SearchAlgorithm {
                 if (!n.equals(goal) && !passable.test(n)) continue;
                 parent.put(n, cur);
                 queue.add(n);
+                explored.add(n);
             }
         }
-        return new SearchResult(List.of(), expanded);
+        return new SearchResult(List.of(), expanded, explored);
     }
 
     /** Reconstruye el camino siguiendo el mapa parent[child]=padre desde goal hasta start. */
