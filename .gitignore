@@ -1,0 +1,22 @@
+# Compilación
+target/
+*.class
+
+# Maven
+.mvn/
+.m2/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
